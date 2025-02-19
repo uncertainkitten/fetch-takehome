@@ -3,7 +3,7 @@ import DisplayGrid from './DisplayGrid'
 import { Button } from '@mui/material'
 import { BASE_URL } from '../../helpers/constants'
 import Search from './Search'
-import { getDogQuery, getDogList, setHeaders } from '../../helpers/helperFunctions'
+import { getDogQuery, getDogList, setHeaders, findFavoritesPage } from '../../helpers/helperFunctions'
 
 const Results = ({ initialData, setMatch }) => {
     const [dogQuery, setDogQuery] = useState([])
@@ -65,7 +65,9 @@ const Results = ({ initialData, setMatch }) => {
 
         if(favorites) {
             body = JSON.stringify(selectedDogs)
-        } else if (matchId) {
+        }
+        
+        if (matchId) {
             body = JSON.stringify([matchId])
             let matchData = await getDogList(body)
             setIsLoading(false)
@@ -81,6 +83,10 @@ const Results = ({ initialData, setMatch }) => {
             setDogList(data)
         }
 
+        setPaginationModel({
+            pageSize: 25,
+            page: 0
+        })
         setIsLoading(false)
     }
 
@@ -119,8 +125,37 @@ const Results = ({ initialData, setMatch }) => {
         setIsLoading(false)
     }
 
+    const handleFavoritesPaginationModelChange = async(e) => {
+        let faveIds = findFavoritesPage(e.page, selectedDogs)
+        setIsLoading(true)
+        let data = await getDogList(JSON.stringify(faveIds))
+        if(data.isError) {
+            setIsError(true)
+        } else {
+            setIsError(false)
+            setDogList(data)
+            if(e.page > paginationModel.page) {
+                setPaginationModel({
+                    pageSize: 25,
+                    page: paginationModel.page + 1,
+                })
+            } else {
+                setPaginationModel({
+                    pageSize: 25,
+                    page: paginationModel.page - 1,
+                })
+            }
+        }
+        setIsLoading(false)
+    }
+
     const handlePaginationModelChange = async (e) => {
-        if(e.page > paginationModel.page) {
+        // Favorites are weird since I'm effectively leaving the server side pagination
+        // model to handle them, since we're doing a direct change to dogList instead of
+        // going through dogQuery
+        if(favorites) {
+            handleFavoritesPaginationModelChange(e)
+        } else if(e.page > paginationModel.page) {
             await getPageQuery("next")
         } else {
             await getPageQuery("prev")
@@ -164,7 +199,17 @@ const Results = ({ initialData, setMatch }) => {
     }
 
     const handleFavorites = () => {
+        // this is a bit silly but setting total row count based off of what it will
+        // become, so the conditional is actually the opposite condition of what the totalRowCount
+        // needs to be - doing it before the setState means I don't need to rely on a chancy process
+        // where the setFavorites might or might not finish before I change the totalRowCount
+        if(!favorites) {
+            setTotalRowCount(selectedDogs.length)
+        } else {
+            setTotalRowCount(dogQuery.total)
+        }
         setFavorites(!favorites)
+
     }
 
     const renderFavoritesButton = () => {
@@ -192,6 +237,42 @@ const Results = ({ initialData, setMatch }) => {
         }
     }
 
+    const renderSearch = () => {
+        if(favorites) {
+            return(<></>)
+        } else {
+            return (<Search
+                handleSelect={handleSelect}
+                handleSearchBy={handleSearchBy}
+                handleZipQuery={handleZipQuery}
+                handleAgeMinQuery={handleAgeMinQuery}
+                handleAgeMaxQuery={handleAgeMaxQuery}
+                handleSearch={handleSearch}
+                selectedBreeds={selectedBreeds}
+                searchBy={searchBy}
+                zipQuery={zipQuery}
+                ageMinQuery={ageMinQuery}
+                ageMaxQuery={ageMaxQuery}
+            />)
+        }
+    }
+
+    const renderDisplayGrid = () => {
+        if(isError) {
+            return(<div>Sorry It Broked</div>)
+        } else {
+            return(<DisplayGrid
+                rowCount={rowCount}
+                paginationModel={paginationModel}
+                handlePaginationModelChange={handlePaginationModelChange}
+                dogList={dogList}
+                selectedDogs={selectedDogs}
+                setSelectedDogs={setSelectedDogs}
+                isLoading={isLoading}
+            />)
+        }
+    }
+
     const handleSearch = () => {
         let params = ""
         if(searchBy === "ageMax" && ageMaxQuery > 0) {
@@ -204,7 +285,7 @@ const Results = ({ initialData, setMatch }) => {
             params = `?zipCodes=${zipQuery}`
         }
 
-        getDogQuery(params)
+        handleDogQuery(params)
         setPaginationModel({
             pageSize: 25,
             page: 0
@@ -236,19 +317,7 @@ const Results = ({ initialData, setMatch }) => {
     }
 
     return(<div>
-        <Search
-            handleSelect={handleSelect}
-            handleSearchBy={handleSearchBy}
-            handleZipQuery={handleZipQuery}
-            handleAgeMinQuery={handleAgeMinQuery}
-            handleAgeMaxQuery={handleAgeMaxQuery}
-            handleSearch={handleSearch}
-            selectedBreeds={selectedBreeds}
-            searchBy={searchBy}
-            zipQuery={zipQuery}
-            ageMinQuery={ageMinQuery}
-            ageMaxQuery={ageMaxQuery}
-        />
+        {renderSearch()}
         {renderFavoritesButton()}
         <Button
             sx={{ borderRadius: 2, height: 60, width: 500 }}
@@ -258,15 +327,7 @@ const Results = ({ initialData, setMatch }) => {
             size="large"
             disabled={selectedDogs.length === 0}
         >Match with your new furry friend!</Button>
-        <DisplayGrid
-            rowCount={rowCount}
-            paginationModel={paginationModel}
-            handlePaginationModelChange={handlePaginationModelChange}
-            dogList={dogList}
-            selectedDogs={selectedDogs}
-            setSelectedDogs={setSelectedDogs}
-            isLoading={isLoading}
-        />
+        {renderDisplayGrid()}
     </div>)
 
 }

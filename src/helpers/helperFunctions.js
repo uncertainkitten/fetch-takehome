@@ -47,3 +47,12 @@ export const getDogList = async (body) => {
     return data
 }
 
+export const findFavoritesPage = (page, favorites) => {
+    let start = page * 25
+    let end = (page + 1) * 25
+    if(end > favorites.length) {
+        end = favorites.length
+    }
+    return favorites.slice(start, end)
+}
+

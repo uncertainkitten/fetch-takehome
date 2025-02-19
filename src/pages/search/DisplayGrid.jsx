@@ -49,6 +49,7 @@ const DisplayGrid = ({
             sx={{ border: 0, fontSize: 20 }}
             onRowSelectionModelChange={(newRowSelectionModel) => handleRowModelChange(newRowSelectionModel)}
             rowSelectionModel={selectedDogs}
+            isRowSelectable={(params) => selectedDogs.length < 100}
         />)
 }
 
