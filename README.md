@@ -11,5 +11,5 @@ Currently, two official plugins are available:
 
 To run this repo locally, navigate into the project directory on console and run "npm run dev"
 
-To visit the live site go to (I haven't uploaded it yet I'll change this later)
+To visit the live site go to https://uncertainkitten.github.io/fetch-takehome/
 
