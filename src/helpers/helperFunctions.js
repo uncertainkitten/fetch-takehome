@@ -1,19 +1,49 @@
-export const filterByNameOrBreed = (list, query, key) => {
-    const results = list.filter((dog) => {
-        if(dog[key].startsWith(query)) {
-            return dog
-        }
-    })
+import { BASE_URL } from "./constants"
 
-    return results
+export const setHeaders = () => {
+    const reqHeaders = new Headers()
+    reqHeaders.append("credentials", "include")
+    reqHeaders.append("Content-Type", "application/json")
+    return reqHeaders
 }
 
-export const filterByZip = (list, query) => {
-    const results = list.filter((dog) => {
-        if(dog["zip"] === query) {
-            return dog
-        }
-    })
+export const getDogQuery = async (params) => {
+    const reqHeaders = setHeaders()
+    let data = false
 
-    return results
+    try {
+        const result = await fetch(`${BASE_URL}/dogs/search${params}`, 
+            {
+                method: "GET",
+                headers: reqHeaders,
+                credentials: "include"
+            })
+        
+        data = await result.json()
+    } catch (error) {
+        data = { isError: true, error: error }
+    }
+
+    return data
 }
+
+export const getDogList = async (body) => {
+    const reqHeaders = setHeaders()
+    let data = false
+    console.log(body)
+    try {
+        const result = await fetch(`${BASE_URL}/dogs`, 
+            {
+                method: "POST",
+                headers: reqHeaders,
+                credentials: "include",
+                body: body
+            })
+        data = await result.json()
+    } catch (error) {
+        data = { isError: true, error: error }
+    }
+
+    return data
+}
+

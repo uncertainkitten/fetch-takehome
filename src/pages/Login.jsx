@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { TextField, Button, Stack } from '@mui/material'
+import { BASE_URL } from '../helpers/constants'
 
-const Login = () => {
+const Login = ({ getInitialQuery, setLoginRequired }) => {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [data, setData] = useState()
@@ -16,7 +17,7 @@ const Login = () => {
         reqHeaders.append("Content-Type", "application/json")
 
         try {
-            const result = await fetch("https://frontend-take-home-service.fetch.com/auth/login", 
+            const result = await fetch(`${BASE_URL}/auth/login`, 
                 {
                     method: "POST",
                     body: JSON.stringify({ name, email }),
@@ -25,6 +26,8 @@ const Login = () => {
                 })
 
             setData(result)
+            setLoginRequired(false)
+            await getInitialQuery()
         } catch (error) {
             setIsError(true)
         }
